@@ -1,55 +1,66 @@
 import telebot
 import sqlite3
 
-# 1. TOKENNI TO'G'RI QO'YGANINGGA ISHONCH HOSIL QIL
-TOKEN = '7011547936:AAGGR0G_jxDiCarlPwRPR35hf5i_y6xAeNE' # Sening tokening
+# --- 1. SOZLAMALAR ---
+TOKEN = '7011547936:AAGGR0G_jxDiCarlPwRPR35hf5i_y6xAeNE'
 bot = telebot.TeleBot(TOKEN)
 ADMIN_LOGIN = "azik1202"
 admins = set()
 
-# 2. BAZANI TOZALAB QAYTADAN OCHISH
+# --- 2. BAZANI SOZLASH ---
 def init_db():
     conn = sqlite3.connect('movies.db', check_same_thread=False)
-    conn.execute('DROP TABLE IF EXISTS movies') # Eskisini o'chiradi (xato bermasligi uchun)
-    conn.execute('CREATE TABLE movies (m_id TEXT, m_name TEXT, f_id TEXT)')
+    conn.execute('CREATE TABLE IF NOT EXISTS movies (m_id TEXT, m_name TEXT, f_id TEXT)')
     conn.commit()
     return conn
 
 db = init_db()
 
+# --- 3. FOYDALANUVCHILAR UCHUN ---
 @bot.message_handler(commands=['start'])
-def start(message):
+def welcome(message):
+    user = message.from_user.first_name
     markup = telebot.types.InlineKeyboardMarkup()
     markup.add(telebot.types.InlineKeyboardButton("🎬 Kinolar ro'yxati", callback_data="list"))
-    bot.send_message(message.chat.id, f"Assalomu aleykum {message.from_user.first_name}!", reply_markup=markup)
+    bot.send_message(message.chat.id, f"Assalomu aleykum {user}, xush kelibsiz!", reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: call.data == "list")
-def list_mov(call):
+def show_list(call):
     cursor = db.cursor()
     cursor.execute("SELECT m_id, m_name FROM movies")
     rows = cursor.fetchall()
-    text = "🎬 Kinolar:\n\n" + "\n".join([f"{r[0]}. {r[1]}" for r in rows]) if rows else "Hozircha bo'sh."
-    bot.send_message(call.message.chat.id, text)
+    text = "🎬 **Mavjud kinolar:**\n\n" + "\n".join([f"🆔 {r[0]} | 🎥 {r[1]}" for r in rows]) if rows else "Baza hozircha bo'sh."
+    bot.send_message(call.message.chat.id, text, parse_mode="Markdown")
 
+# --- 4. ADMIN TIZIMI ---
 @bot.message_handler(commands=['admin'])
-def adm(message):
-    bot.send_message(message.chat.id, "Login?")
-    bot.register_next_step_handler(message, lambda m: admins.add(m.from_user.id) or bot.reply_to(m, "Admin faol!") if m.text == ADMIN_LOGIN else bot.reply_to(m, "Xato!"))
+def ask_login(message):
+    bot.send_message(message.chat.id, "Maxfiy loginni kiriting:")
+    bot.register_next_step_handler(message, check_login)
+
+def check_login(message):
+    if message.text == ADMIN_LOGIN:
+        admins.add(message.from_user.id)
+        bot.reply_to(message, "✅ Admin tasdiqlandi! /add va /remove ishlaydi.")
+    else:
+        bot.reply_to(message, "❌ Login xato!")
 
 @bot.message_handler(commands=['add'])
-def add(message):
-    if message.from_user.id in admins and message.reply_to_message and message.reply_to_message.video:
-        p = message.text.split(maxsplit=2)
-        if len(p) < 3: return bot.reply_to(message, "Format: /add ID NOMI")
-        db.execute("INSERT INTO movies VALUES (?,?,?)", (p[1], p[2], message.reply_to_message.video.file_id))
-        db.commit()
-        bot.reply_to(message, "✅ Qo'shildi!")
+def add_movie(message):
+    if message.from_user.id not in admins: return
+    if message.reply_to_message and message.reply_to_message.video:
+        try:
+            p = message.text.split(maxsplit=2)
+            db.execute("INSERT INTO movies VALUES (?,?,?)", (p[1], p[2], message.reply_to_message.video.file_id))
+            db.commit()
+            bot.reply_to(message, f"✅ Qo'shildi: {p[2]}")
+        except:
+            bot.reply_to(message, "Xato! Format: /add ID NOMI (videoga reply qiling)")
 
 @bot.message_handler(func=lambda m: m.text.isdigit())
 def find(message):
     res = db.execute("SELECT f_id, m_name FROM movies WHERE m_id=?", (message.text,)).fetchone()
-    if res: bot.send_video(message.chat.id, res[0], caption=res[1])
-    else: bot.send_message(message.chat.id, "Topilmadi.")
+    if res: bot.send_video(message.chat.id, res[0], caption=f"🎬 {res[1]}")
+    else: bot.send_message(message.chat.id, "Kino topilmadi.")
 
-print("Bot yonmoqda...")
 bot.infinity_polling()
