@@ -39,4 +39,5 @@ def add_movie(message):
     else:
         bot.reply_to(message, "Xato! Kinoni yuboring va unga reply qilib '/add raqam' deb yozing.")
 
+
 bot.infinity_polling()
