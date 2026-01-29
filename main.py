@@ -28,7 +28,35 @@ TOKEN = '7011547936:AAHFfUyzTg9EUhnq6KrKEP69pOm_uTHn-7Q'
 bot = telebot.TeleBot(TOKEN, parse_mode="Markdown")
 ADMIN_LOGIN = "azik1202"
 active_admins = set()
-
+@bot.message_handler(commands=['remove'])
+def remove_movie(message):
+    # Adminlikni tekshirish
+    if message.from_user.id not in active_admins:
+        bot.reply_to(message, "🛑 Siz admin emassiz!")
+        return
+    
+    # Buyruqdan keyin ID yozilganini tekshirish
+    try:
+        parts = message.text.split()
+        if len(parts) < 2:
+            bot.reply_to(message, "⚠️ O'chirish uchun ID yuboring. Masalan: `/remove 101`")
+            return
+            
+        m_id = parts[1]
+        
+        # Bazadan o'chirish
+        cursor = db.cursor()
+        cursor.execute("DELETE FROM movies WHERE m_id=?", (m_id,))
+        db.commit()
+        
+        if cursor.rowcount > 0:
+            bot.reply_to(message, f"✅ ID `{m_id}` bo'lgan kino bazadan o'chirildi.")
+        else:
+            bot.reply_to(message, f"❓ Bazada `{m_id}` ID bilan kino topilmadi.")
+            
+    except Exception as e:
+        bot.reply_to(message, "❌ Xatolik yuz berdi.")
+        logger.error(f"Remove error: {e}")
 # 4. DATABASE BILAN ISHLASH (Xavfsiz ulanish)
 def get_db():
     conn = sqlite3.connect('movies.db', check_same_thread=False)
@@ -120,3 +148,4 @@ def search_movie(message):
 if __name__ == '__main__':
     logger.info("Bot is starting...")
     bot.infinity_polling(timeout=10, long_polling_timeout=5)
+
