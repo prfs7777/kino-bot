@@ -1,23 +1,7 @@
 import telebot
 import sqlite3
 import os
-from flask import Flask
-from threading import Thread
 
-# Render port so'ragani uchun kichik veb-server
-app = Flask('')
-@app.route('/')
-def home():
-    return "Bot is running!"
-
-def run():
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
-
-# Botni alohida oqimda yurgizish
-Thread(target=run).start()
-
-# --- SENING ASLI KODING SHUNDAN KEYIN DAVOM ETADI ---
-# ... qolgan kodlar ...
 # --- 1. SOZLAMALAR ---
 TOKEN = '7011547936:AAHFfUyzTg9EUhnq6KrKEP69pOm_uTHn-7Q'
 bot = telebot.TeleBot(TOKEN)
@@ -81,5 +65,6 @@ def find(message):
     else: bot.send_message(message.chat.id, "Kino topilmadi.")
 
 bot.infinity_polling()
+
 
 
