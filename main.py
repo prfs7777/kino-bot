@@ -2,7 +2,7 @@ import telebot
 import sqlite3
 
 # --- 1. SOZLAMALAR ---
-TOKEN = '7011547936:AAGGR0G_jxDiCarlPwRPR35hf5i_y6xAeNE'
+TOKEN = '7011547936:AAHFfUyzTg9EUhnq6KrKEP69pOm_uTHn-7Q'
 bot = telebot.TeleBot(TOKEN)
 ADMIN_LOGIN = "azik1202"
 admins = set()
@@ -64,3 +64,4 @@ def find(message):
     else: bot.send_message(message.chat.id, "Kino topilmadi.")
 
 bot.infinity_polling()
+
