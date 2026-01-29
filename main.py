@@ -1,24 +1,22 @@
 import telebot
 import sqlite3
 
-# --- 1. SOZLAMALAR ---
-TOKEN = '7011547936:AAFqL1gzd_nczMiMllwgoGigoUQrNIUk2o0' # O'zingiznikini qo'ying
+# 1. TOKENNI TO'G'RI QO'YGANINGGA ISHONCH HOSIL QIL
+TOKEN = '7011547936:AAGGR0G_jxDiCarlPwRPR35hf5i_y6xAeNE' # Sening tokening
 bot = telebot.TeleBot(TOKEN)
 ADMIN_LOGIN = "azik1202"
 admins = set()
 
-# --- 2. MA'LUMOTLAR BAZASI (XAVFSIZ USUL) ---
+# 2. BAZANI TOZALAB QAYTADAN OCHISH
 def init_db():
     conn = sqlite3.connect('movies.db', check_same_thread=False)
-    # Jadval va ustunlarni tekshirib yaratadi
-    cursor = conn.cursor()
-    cursor.execute('CREATE TABLE IF NOT EXISTS movies (m_id TEXT, m_name TEXT, f_id TEXT)')
+    conn.execute('DROP TABLE IF EXISTS movies') # Eskisini o'chiradi (xato bermasligi uchun)
+    conn.execute('CREATE TABLE movies (m_id TEXT, m_name TEXT, f_id TEXT)')
     conn.commit()
     return conn
 
 db = init_db()
 
-# --- 3. FOYDALANUVCHI QISMI ---
 @bot.message_handler(commands=['start'])
 def start(message):
     markup = telebot.types.InlineKeyboardMarkup()
@@ -33,7 +31,6 @@ def list_mov(call):
     text = "🎬 Kinolar:\n\n" + "\n".join([f"{r[0]}. {r[1]}" for r in rows]) if rows else "Hozircha bo'sh."
     bot.send_message(call.message.chat.id, text)
 
-# --- 4. ADMIN VA QIDIRUV ---
 @bot.message_handler(commands=['admin'])
 def adm(message):
     bot.send_message(message.chat.id, "Login?")
@@ -54,4 +51,5 @@ def find(message):
     if res: bot.send_video(message.chat.id, res[0], caption=res[1])
     else: bot.send_message(message.chat.id, "Topilmadi.")
 
+print("Bot yonmoqda...")
 bot.infinity_polling()
